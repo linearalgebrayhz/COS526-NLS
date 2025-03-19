@@ -277,6 +277,7 @@ class LightSphereModel(pl.LightningModule):
     
     #  @torch.jit.script
     #  decorator in PyTorch that converts a Python function or class into TorchScript
+    #  why no self pointer here?
     @torch.jit.script
     def solve_sphere_crossings(ray_origins, ray_directions):
         #------------------------------------------------------
@@ -295,7 +296,8 @@ class LightSphereModel(pl.LightningModule):
         # quadratic coeff
         # a = torch.sum(ray_directions * ray_directions, dim = 1) # already normalized according to paper
         b = 2 * torch.sum(ray_directions * ray_origins, dim = 1)
-        c = torch.sum(ray_origin,ray_origin, dim = 1) - torch.ones(N)
+        c = torch.sum(ray_origins * ray_origins, dim = 1) - 1.0
+
 
         # delta = b ** 2 - 4 * a * c 
         delta = b ** 2 - 4 * c # what if determinant < 0 ? 
@@ -303,7 +305,7 @@ class LightSphereModel(pl.LightningModule):
         # t = (-b + torch.sqrt(delta))/ (2*a)
         t = (-b + torch.sqrt(delta))/ 2
 
-        intersections = ray_origin + ray_directions * t.unsqueeze(-1) # dimension (N,) -> (N,1)
+        intersections = ray_origins + ray_directions * t.unsqueeze(-1) # dimension (N,) -> (N,1)
         
         return intersections
                 
@@ -340,7 +342,7 @@ class LightSphereModel(pl.LightningModule):
         else:
             intersections_sphere_offset = intersections_sphere
 
-        encoded_color_position = self.encoding_color_position((intersection_sphere_offset + 1) / 2) # -> \gamma_2{corrected intersection}
+        encoded_color_position = self.encoding_color_position((intersectionw_sphere_offset + 1) / 2) # -> \gamma_2{corrected intersection}
         
         feat_color = self.network_color_position(encoded_color_position).float() # -> h_p
 
@@ -375,7 +377,7 @@ class LightSphereModel(pl.LightningModule):
         #-----   - These answers should match the ones you have from `inference` function, except with masks this time. Feel free to copy paste.
         #------------------------------------------------------
         
-        assert False, 'Please finish the code before removing this assertion'
+        # assert False, 'Please finish the code before removing this assertion'
 
         if training_phase > 0.2 and not self.args.no_offset:
             encoded_offset_position = self.mask(self.encoding_offset_position((intersections_sphere + 1) / 2), training_phase, initial=0.2)
@@ -390,7 +392,7 @@ class LightSphereModel(pl.LightningModule):
             offset = torch.ones_like(ray_directions)
             intersections_sphere_offset = intersections_sphere
 
-        encoded_color_position = self.mask(self.encoding_color_position((intersection_sphere_offset + 1) / 2), training_phase, initial=0.8)
+        encoded_color_position = self.mask(self.encoding_color_position((intersections_sphere_offset + 1) / 2), training_phase, initial=0.8)
         
         feat_color = self.network_color_position(encoded_color_position).float()
 
