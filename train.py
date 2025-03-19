@@ -274,7 +274,9 @@ class LightSphereModel(pl.LightningModule):
             return encoding
         else:
             return utils.mask(encoding, training_phase, initial)
-        
+    
+    #  @torch.jit.script
+    #  decorator in PyTorch that converts a Python function or class into TorchScript
     @torch.jit.script
     def solve_sphere_crossings(ray_origins, ray_directions):
         #------------------------------------------------------
@@ -286,8 +288,22 @@ class LightSphereModel(pl.LightningModule):
         #-----   - ray_directions: torch.Tensor, of shape [N, 3].
         #------------------------------------------------------
         
-        assert False, 'Please finish the code before removing this assertion'
-        intersections = ...
+        # assert False, 'Please finish the code before removing this assertion'
+        
+        N = ray_origins.shape[0]
+
+        # quadratic coeff
+        # a = torch.sum(ray_directions * ray_directions, dim = 1) # already normalized according to paper
+        b = 2 * torch.sum(ray_directions * ray_origins, dim = 1)
+        c = torch.sum(ray_origin,ray_origin, dim = 1) - torch.ones(N)
+
+        # delta = b ** 2 - 4 * a * c 
+        delta = b ** 2 - 4 * c # what if determinant < 0 ? 
+
+        # t = (-b + torch.sqrt(delta))/ (2*a)
+        t = (-b + torch.sqrt(delta))/ 2
+
+        intersections = ray_origin + ray_directions * t.unsqueeze(-1) # dimension (N,) -> (N,1)
         
         return intersections
                 
@@ -310,11 +326,11 @@ class LightSphereModel(pl.LightningModule):
         #-----   - uv: torch.Tensor, of shape [N, 2]. Both u and v lie within [0, 1].
         #------------------------------------------------------
         
-        assert False, 'Please finish the code before removing this assertion'
+        # assert False, 'Please finish the code before removing this assertion'
 
         if not self.args.no_offset:
-            encoded_offset_position = ...
-            encoded_offset_angle = ...
+            encoded_offset_position = self.encoding_offset_position((intersections_sphere + 1) / 2) # scale to [0, 1]
+            encoded_offset_angle = self.encoding_offset_angle(uv)
             
             encoded_offset = torch.cat((encoded_offset_position, encoded_offset_angle), dim=1)
             
@@ -324,12 +340,12 @@ class LightSphereModel(pl.LightningModule):
         else:
             intersections_sphere_offset = intersections_sphere
 
-        encoded_color_position = ...
+        encoded_color_position = self.encoding_color_position((intersection_sphere_offset + 1) / 2) # -> \gamma_2{corrected intersection}
         
-        feat_color = self.network_color_position(encoded_color_position).float()
+        feat_color = self.network_color_position(encoded_color_position).float() # -> h_p
 
         if not self.args.no_view_color:
-            encoded_color_angle = ...
+            encoded_color_angle = self.encoding_color_angle(uv)
             
             encoded_color = torch.cat((encoded_color_position, encoded_color_angle), dim=1)
             feat_color_angle = self.network_color_angle(encoded_color)
@@ -362,8 +378,8 @@ class LightSphereModel(pl.LightningModule):
         assert False, 'Please finish the code before removing this assertion'
 
         if training_phase > 0.2 and not self.args.no_offset:
-            encoded_offset_position = self.mask(..., training_phase, initial=0.2)
-            encoded_offset_angle = self.mask(..., training_phase, initial=0.5)
+            encoded_offset_position = self.mask(self.encoding_offset_position((intersections_sphere + 1) / 2), training_phase, initial=0.2)
+            encoded_offset_angle = self.mask(self.encoding_offset_angle(uv), training_phase, initial=0.5)
             
             encoded_offset = torch.cat((encoded_offset_position, encoded_offset_angle), dim=1)
 
@@ -374,12 +390,12 @@ class LightSphereModel(pl.LightningModule):
             offset = torch.ones_like(ray_directions)
             intersections_sphere_offset = intersections_sphere
 
-        encoded_color_position = self.mask(..., training_phase, initial=0.8)
+        encoded_color_position = self.mask(self.encoding_color_position((intersection_sphere_offset + 1) / 2), training_phase, initial=0.8)
         
         feat_color = self.network_color_position(encoded_color_position).float()
 
         if training_phase > 0.25 and not self.args.no_view_color:
-            encoded_color_angle = self.mask(..., training_phase, initial=0.2)
+            encoded_color_angle = self.mask(self.encoding_color_angle(uv), training_phase, initial=0.2)
             
             encoded_color = torch.cat((encoded_color_position, encoded_color_angle), dim=1)
             feat_color_angle = self.network_color_angle(encoded_color)
@@ -479,9 +495,12 @@ class PanoModel(pl.LightningModule):
         #------------------------------------------------------
 
         # Apply radial distortion
-        assert False, 'Please finish the code before removing this assertion'
-        x_distorted = ...
-        y_distorted = ...
+        # tengential distortion??
+
+        # assert False, 'Please finish the code before removing this assertion'
+        
+        x_distorted = x * (1 + kappa1 * r2 + kappa2 * r4 + kappa3 * r6)
+        y_distorted = y * (1 + kappa1 * r2 + kappa2 * r4 + kappa3 * r6)
 
         xy_distorted = torch.cat([x_distorted, y_distorted], dim=1)
         
