@@ -291,7 +291,7 @@ class LightSphereModel(pl.LightningModule):
         
         # assert False, 'Please finish the code before removing this assertion'
         
-        N = ray_origins.shape[0]
+        # N = ray_origins.shape[0]
 
         # quadratic coeff
         # a = torch.sum(ray_directions * ray_directions, dim = 1) # already normalized according to paper
@@ -300,7 +300,7 @@ class LightSphereModel(pl.LightningModule):
 
 
         # delta = b ** 2 - 4 * a * c 
-        delta = b ** 2 - 4 * c # what if determinant < 0 ? 
+        delta = b ** 2 - 4 * c
 
         # t = (-b + torch.sqrt(delta))/ (2*a)
         t = (-b + torch.sqrt(delta))/ 2
@@ -342,7 +342,7 @@ class LightSphereModel(pl.LightningModule):
         else:
             intersections_sphere_offset = intersections_sphere
 
-        encoded_color_position = self.encoding_color_position((intersectionw_sphere_offset + 1) / 2) # -> \gamma_2{corrected intersection}
+        encoded_color_position = self.encoding_color_position((intersections_sphere_offset + 1) / 2) # -> \gamma_2{corrected intersection}
         
         feat_color = self.network_color_position(encoded_color_position).float() # -> h_p
 
@@ -497,7 +497,7 @@ class PanoModel(pl.LightningModule):
         #------------------------------------------------------
 
         # Apply radial distortion
-        # actually tengential distortion can also be applied
+        # actually tangential distortion can also be applied
 
         # assert False, 'Please finish the code before removing this assertion'
         
