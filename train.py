@@ -497,12 +497,12 @@ class PanoModel(pl.LightningModule):
         #------------------------------------------------------
 
         # Apply radial distortion
-        # tengential distortion??
+        # actually tengential distortion can also be applied
 
         # assert False, 'Please finish the code before removing this assertion'
         
-        x_distorted = x * (1 + kappa1 * r2 + kappa2 * r4 + kappa3 * r6)
-        y_distorted = y * (1 + kappa1 * r2 + kappa2 * r4 + kappa3 * r6)
+        x_distorted = x * (1 + kappa1 * r2 + kappa2 * r4 + kappa3 * r6) + 2 * kappa4 * x * y + kappa5 * (r2 + 2 * x**2)
+        y_distorted = y * (1 + kappa1 * r2 + kappa2 * r4 + kappa3 * r6) + 2 * kappa5 * x * y + kappa4 * (r2 + 2 * x**2)
 
         xy_distorted = torch.cat([x_distorted, y_distorted], dim=1)
         
